@@ -1,4 +1,4 @@
-use crate::traits::{Rotate, RotateMut, Step, StepMut};
+use crate::traits::{Polyhedral, Rotate, RotateMut, Step, StepMut};
 
 /// A die that has a known and fixed set of values, and a position that points at the current value.
 ///
@@ -84,6 +84,12 @@ impl<'a, T, const LENGTH: usize> From<&'a [T; LENGTH]> for SliceDie<'a, T, LENGT
     /// If the given slice is empty.
     fn from(elements: &'a [T; LENGTH]) -> Self {
         Self::new(elements)
+    }
+}
+
+impl<T, const MAXIMUM: usize> Polyhedral for SliceDie<'_, T, MAXIMUM> {
+    fn sides() -> usize {
+        MAXIMUM
     }
 }
 

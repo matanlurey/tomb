@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Sub},
 };
 
-use crate::traits::{Numeric, Rotate, RotateMut, Step, StepMut};
+use crate::traits::{Numeric, Polyhedral, Rotate, RotateMut, Step, StepMut};
 
 /// A die that starts at `1` and has a defined maximum numeric value.
 ///
@@ -168,6 +168,15 @@ where
         assert!(number >= T::MINIMUM);
         assert!(number.as_usize() <= MAXIMUM);
         unsafe { Self::from_unchecked(number) }
+    }
+}
+
+impl<T, const MAXIMUM: usize> Polyhedral for NumericDie<T, MAXIMUM>
+where
+    T: Numeric,
+{
+    fn sides() -> usize {
+        MAXIMUM
     }
 }
 
