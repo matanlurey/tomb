@@ -2,9 +2,10 @@ use crate::traits::{Polyhedral, Rotate, RotateMut, Step, StepMut};
 
 /// A die that has a known and fixed set of values, and a position that points at the current value.
 ///
-/// When you think of dice, [`NumericDie`] is both _simpler to use_ and _more typical_ (a range of
-/// numbers). However, if that number will be mapped back to a non-numeric value, for example either
-/// a discrete value, an enum, or to have a weighted effect, in steps `SliceDie`.
+/// When you think of dice, [`crate::items::NumericDie`] is both _simpler to use_ and _more
+/// typical_ (a range of numbers). However, if that number will be mapped back to a non-numeric
+/// value, for example either a discrete value, an enum, or to have a weighted effect, in steps
+/// `SliceDie`.
 ///
 /// # Examples
 ///

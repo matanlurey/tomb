@@ -58,6 +58,7 @@ impl Roll for RngRoller {
         let sides = T::sides();
         let range = 0..sides;
         let amount = self.0.usize(range);
+        dbg!(amount);
         rotate.rotate(amount as i8)
     }
 }

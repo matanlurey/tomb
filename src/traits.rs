@@ -1,3 +1,5 @@
+//! Contains behaviors physical objects can declare.
+
 mod numeric;
 mod polyhedral;
 mod roll;
