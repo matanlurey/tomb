@@ -2,7 +2,10 @@
 //!
 //! A typical app will create and manage one or more _die_, typically [`NumericDie`] which are
 //! simpler than [`SliceDie`], and often one of the convenience type such as [`D6`], and either
-//! manually work with the dice or use a (recommended) _roller_, typic
+//! manually work with the dice or use a (recommended) _roller_, typically
+//! [`crate::items::RngRoller`].
+//!
+//! # Examples
 //!
 //! ```
 //! // A static seed is provided in order to make this example predictable.
