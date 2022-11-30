@@ -1,0 +1,549 @@
+//! Simple implementations that can help explain the crate to first-time users.
+//!
+//! If you just need coins or some dice, and aren't looking to further customize, look no further.
+//!
+//! # Examples
+//!
+//! ## Coins
+//!
+//! ```
+//! use tomb::Coin;
+//! use tomb::simple::SimpleCoin;
+//!
+//! // Immutable
+//! let heads = SimpleCoin::heads();
+//! assert!(heads.is_heads());
+//! let tails = heads.swap();
+//! assert!(tails.is_tails());
+//!
+//! // Mutable
+//! let mut coin = SimpleCoin::heads();
+//! coin.swap_mut();
+//! assert!(coin.is_tails());
+//! ```
+//!
+//! ## Dice
+//!
+//! ```
+//! use tomb::Polyhedral;
+//! use tomb::simple::SimpleD6;
+//!
+//! // Immutable
+//! let one = SimpleD6::new();
+//! assert_eq!(one.get(), 1);
+//! let two = one.next();
+//! assert_eq!(two.get(), 2);
+//!
+//! // Mutable
+//! let mut die = SimpleD6::new();
+//! die.next_mut();
+//! assert_eq!(die.get(), 2);
+//! ```
+
+mod coin;
+mod die;
+
+pub use coin::*;
+pub use die::*;
+
+//! Tomb is a minimal crate that provides dice rolling mechanisms for games.
+//!
+//! Why use `tomb`:
+//! - The name is great (short for _tombstones_, another name for _dice_)
+//! - Requires close to no depdendencies (an optional one for the `fastrand` crate)
+//! - Fully tested with generous example code
+//!
+//! One way to think about `tomb` is as a minimal _headless_ [tabletop simulator][].
+//!
+//! [tabletop simulator]: https://www.tabletopsimulator.com/
+
+pub mod impls;
+pub mod simple;
+pub mod traits;
+
+#[cfg(feature = "fastrand")]
+pub use fastrand::Rng;
+
+/// A 2-sided object.
+pub trait Coin<V> {
+    /// Returns the coin with the value set to the "opposite" side.
+    fn swap(&self) -> Self;
+
+    /// Updates the coin with the value set to the "opposite" side.
+    ///
+    /// Returns the currently set value.
+    fn swap_mut(&mut self) -> V;
+}
+
+/// A multi-sided object with a fixed amount of valid _faces_ or values `V`.
+pub trait Polyhedral<V, const SIDES: usize>
+where
+    V: Clone + PartialEq,
+{
+    /// Returns a new polyhedral that represents a `current` value (facing).
+    ///
+    /// # Safety
+    ///
+    /// There is no check performed that current indeed _is_ a valid facing, for example it could
+    /// be possible to have a value of `7` represented on a D6, which is otherwise undefined
+    /// behavior.
+    ///
+    /// In cases where `V` is well-defined (e.g. an enum), this operation is _always_ safe.
+    unsafe fn as_unchecked(&self, current: V) -> Self;
+
+    /// Returns a polyhedral with the value set to the "next" side.
+    ///
+    /// For a coin, this would potentially return a tails-facing coin from a heads-facing one.
+    /// For a dice, this would potentiallu return a 5-facing coin from a 4-facing one.
+    fn next(&self) -> Self
+    where
+        Self: Sized,
+    {
+        let current = self.current();
+        let sides = self.sides();
+        let next = impls::next_slice(current, sides);
+        unsafe { self.as_unchecked(next) }
+    }
+
+    /// Updates a polyhedral with the value set to the "next" side.
+    ///
+    /// For a coin, this would potentially return a tails-facing coin from a heads-facing one.
+    /// For a dice, this would potentiallu return a 5-facing coin from a 4-facing one.
+    ///
+    /// Returns the newly set value.
+    fn next_mut(&mut self) -> V
+    where
+        Self: Sized,
+    {
+        let current = self.current();
+        let sides = self.sides();
+        let next = impls::next_slice(current, sides);
+        unsafe { self.set_unchecked(next) }
+    }
+
+    /// Returns a polyhedral with the value moved a finite number of times.
+    fn rotate(&self, by: i8) -> Self
+    where
+        Self: Sized,
+    {
+        let current = self.current();
+        let sides = self.sides();
+        let next = impls::rotate_slice(current, sides, by);
+        unsafe { self.as_unchecked(next) }
+    }
+
+    /// Updates a polyhedral with the value moved a finite number of times.
+    ///
+    /// Returns the newly set value.
+    fn rotate_mut(&mut self, by: i8) -> V
+    where
+        Self: Sized,
+    {
+        let current = self.current();
+        let sides = self.sides();
+        let next = impls::rotate_slice(current, sides, by);
+        unsafe { self.set_unchecked(next) }
+    }
+
+    /// Returns the polyhedral as the numeric _side_ represented by the current value.
+    fn current(&self) -> usize;
+
+    /// Returns a slice of all possible sides that could be represented as a value.
+    ///
+    /// The sides are expected to be in a logical order, for example:
+    /// ```
+    /// # struct X;
+    /// # impl X {
+    /// // Example of the sides of a D6
+    /// fn sides(&self) -> &[u8; 6] {
+    ///     const SIDES: [u8; 6] = [1, 2, 3, 4, 5, 6];
+    ///     &SIDES
+    /// }
+    /// # }
+    /// ```
+    fn sides(&self) -> &[V; SIDES];
+
+    /// Returns the current value, or _face_, of the polyhedral.
+    fn get(&self) -> V;
+
+    /// Returns whether the given value can be used for [`Polyhedral::set`].
+    ///
+    /// # Performance
+    ///
+    /// By default, this is implemented as `self.sides().contains(&value)`, which is `O(n)`. For
+    /// larger `n` counts or when value is well-constrained (i.e. for a D20, the value be within
+    /// `1..=20`), **override** this default method:
+    ///
+    /// ```
+    /// # const SIDES: u8 = 6;
+    /// # struct X;
+    /// # impl X {
+    /// // Example of validating a D20
+    /// fn is_valid(&self, value: &u8) -> bool {
+    ///     (1..=SIDES).contains(value)
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// For implementations where value is well-defined (e.g. an enum), just return true:
+    /// ```
+    /// # use tomb::simple::CoinFacing;
+    /// # struct X;
+    /// # impl X {
+    /// // Example of validating a coin
+    /// fn is_valid(&self, _: &CoinFacing) -> bool {
+    ///     true
+    /// }
+    /// # }
+    /// ```
+    fn is_valid(&self, value: &V) -> bool {
+        self.sides().contains(value)
+    }
+
+    /// Sets the current value, or _face_, of the polyhedral.
+    ///
+    /// # Panics
+    ///
+    /// If `value` is out of bounds or otherwise invalid.
+    fn set(&mut self, value: V) -> V {
+        if !self.is_valid(&value) {
+            panic!("Not a valid value")
+        }
+        unsafe { self.set_unchecked(value) }
+    }
+
+    /// Sets the current value, or _face_, of the polyhedral.
+    ///
+    /// # Safety
+    ///
+    /// There is no check performed that `value` indeed _is_ a valid facing, for example it could be
+    /// possible to have a value of `7` represented on a D6, which is otherwise undefined behavior.
+    ///
+    /// In cases where `V` is well-defined (e.g. an enum), this operation is _always_ safe.
+    unsafe fn set_unchecked(&mut self, value: V) -> V;
+}
+
+//! Helper functions that can be used to implement your own types just like `tomb`.
+
+/// Implements [`crate::Polyhedral::next`] where `V` is a unique value from a slice of values.
+///
+/// # Panics
+///
+/// If `current` is out of bounds.
+pub fn next_slice<T, const SIZE: usize>(current: usize, all: &[T; SIZE]) -> T
+where
+    T: Clone,
+{
+    assert!(current < SIZE);
+    let next = if current + 1 == SIZE { 0 } else { current + 1 };
+    all[next].clone()
+}
+
+/// Implements [`crate::Polyhedral::rotate`] where `V` is a unique value from a slice of values.
+///
+/// # Panics
+///
+/// If `current` is out of bounds.
+#[allow(clippy::comparison_chain)]
+pub fn rotate_slice<T, const SIZE: usize>(current: usize, all: &[T; SIZE], amount: i8) -> T
+where
+    T: Clone,
+{
+    assert!(current < SIZE);
+    if amount == 0 {
+        all[current].clone()
+    } else if amount < 0 {
+        rotate_backward(current, all, amount.unsigned_abs() as usize)
+    } else {
+        rotate_forward(current, all, amount as usize)
+    }
+}
+
+fn rotate_forward<T, const SIZE: usize>(current: usize, all: &[T; SIZE], amount: usize) -> T
+where
+    T: Clone,
+{
+    all[((current + amount) % SIZE)].clone()
+}
+
+fn rotate_backward<T, const SIZE: usize>(current: usize, all: &[T; SIZE], amount: usize) -> T
+where
+    T: Clone,
+{
+    let current = current as i8;
+    let amount = amount as i8;
+    let rotated = current - amount;
+
+    if rotated >= 0 {
+        return all[rotated.unsigned_abs() as usize].clone();
+    }
+
+    let size = SIZE as i8;
+    let rotated = rotated % size + size;
+    debug_assert!(rotated >= 0);
+
+    all[rotated as usize].clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const GRADES: [char; 5] = ['A', 'B', 'C', 'D', 'F'];
+
+    #[test]
+    fn rotate_forward() {
+        // A -> C
+        let result = rotate_slice(0, &GRADES, 2);
+        assert_eq!(result, 'C');
+    }
+
+    #[test]
+    fn rotate_backward() {
+        // C -> A
+        let result = rotate_slice(2, &GRADES, -2);
+        assert_eq!(result, 'A');
+    }
+
+    #[test]
+    fn rotate_forward_loop() {
+        // C -> A
+        let result = rotate_slice(2, &GRADES, 3);
+        assert_eq!(result, 'A');
+    }
+
+    #[test]
+    fn rotate_backward_loop() {
+        // A -> C
+        let result = rotate_slice(0, &GRADES, -3);
+        assert_eq!(result, 'C');
+    }
+}
+
+use std::ops::RangeInclusive;
+
+use crate::*;
+
+macro_rules! simple_die {
+    ($name:ident, $sides:expr, $arr:expr) => {
+        #[doc = concat!("A a simple numerical ", $sides, "-sided die.")]
+        #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+        pub struct $name {
+            value: u8,
+        }
+
+        impl $name {
+            pub const fn new() -> Self {
+                Self { value: 1 }
+            }
+        }
+
+        impl Polyhedral<u8, $sides> for $name {
+            unsafe fn as_unchecked(&self, value: u8) -> Self {
+                Self { value }
+            }
+
+            fn current(&self) -> usize {
+                self.value as usize - 1
+            }
+
+            fn sides(&self) -> &[u8; $sides] {
+                const SIDES: [u8; $sides] = $arr;
+                &SIDES
+            }
+
+            fn get(&self) -> u8 {
+                self.value
+            }
+
+            unsafe fn set_unchecked(&mut self, value: u8) -> u8 {
+                self.value = value;
+                value
+            }
+
+            fn is_valid(&self, value: &u8) -> bool {
+                const RANGE: RangeInclusive<u8> = 1..=$sides;
+                RANGE.contains(value)
+            }
+        }
+    };
+}
+
+/* TODO: Further macro-ize this. */
+
+simple_die!(SimpleD4, 4, [1, 2, 3, 4]);
+simple_die!(SimpleD6, 6, [1, 2, 3, 4, 5, 6]);
+simple_die!(SimpleD8, 8, [1, 2, 3, 4, 5, 6, 7, 8]);
+simple_die!(SimpleD10, 10, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+simple_die!(SimpleD12, 12, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+#[rustfmt::skip]
+simple_die!(SimpleD20, 20, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+
+use crate::*;
+
+/// _Just a simple coin, trying to make its way in the universe._
+///
+/// This coin represents either:
+/// - [`CoinFacing::Heads`]
+/// - [`CoinFacing::Tails`]
+///
+/// ... and is a great albeit simple example of using this library to define a [`Polyhedral`].
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub struct SimpleCoin {
+    value: CoinFacing,
+}
+
+/// Base implementation for our simple coin, which has no knowledge (yet) of the `tomb` crate.
+impl SimpleCoin {
+    /// Creates a new coin with the given value set.
+    pub const fn new(value: CoinFacing) -> Self {
+        Self { value }
+    }
+
+    /// Creates a new coin with [`CoinFacing::Heads`] set.
+    pub const fn heads() -> Self {
+        Self::new(CoinFacing::Heads)
+    }
+
+    /// Creates a new coin with [`CoinFacing::Tails`] set.
+    pub const fn tails() -> Self {
+        Self::new(CoinFacing::Tails)
+    }
+
+    /// Returns whether the coin faces heads.
+    pub fn is_heads(&self) -> bool {
+        self.value == CoinFacing::Heads
+    }
+
+    /// Returns whether the coin faces tails.
+    pub fn is_tails(&self) -> bool {
+        self.value == CoinFacing::Tails
+    }
+}
+
+/// Possible facings for a [`SimpleCoin`].
+///
+/// We could have represented this as a `bool`, but we lose clarity of what `true` or `false` means.
+///
+/// See also: [`SimpleCoin::is_heads`] and [`SimpleCoin::is_tails`].
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum CoinFacing {
+    #[default]
+    Heads,
+    Tails,
+}
+
+impl Polyhedral<CoinFacing, 2> for SimpleCoin {
+    unsafe fn as_unchecked(&self, current: CoinFacing) -> Self {
+        Self::new(current)
+    }
+
+    fn get(&self) -> CoinFacing {
+        self.value
+    }
+
+    fn sides(&self) -> &[CoinFacing; 2] {
+        const FACES: [CoinFacing; 2] = [CoinFacing::Heads, CoinFacing::Tails];
+        &FACES
+    }
+
+    fn current(&self) -> usize {
+        self.value as usize
+    }
+
+    fn is_valid(&self, _: &CoinFacing) -> bool {
+        true
+    }
+
+    unsafe fn set_unchecked(&mut self, value: CoinFacing) -> CoinFacing {
+        self.value = value;
+        value
+    }
+}
+
+impl Coin<CoinFacing> for SimpleCoin {
+    fn swap(&self) -> Self {
+        self.next()
+    }
+
+    fn swap_mut(&mut self) -> CoinFacing {
+        self.next_mut()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simple_coin_heads() {
+        let coin = SimpleCoin::heads();
+        assert!(coin.is_heads());
+    }
+
+    #[test]
+    fn simple_coin_tails() {
+        let coin = SimpleCoin::tails();
+        assert!(coin.is_tails());
+    }
+
+    #[test]
+    fn simple_coin_next() {
+        let coin = SimpleCoin::heads();
+        let tails = coin.next();
+        assert!(tails.is_tails());
+        let heads = tails.next();
+        assert!(heads.is_heads());
+    }
+
+    #[test]
+    fn simple_coin_swap() {
+        let coin = SimpleCoin::heads();
+        let tails = coin.swap();
+        assert!(tails.is_tails());
+        let heads = tails.swap();
+        assert!(heads.is_heads());
+    }
+
+    #[test]
+    fn simple_coin_rotate() {
+        let coin = SimpleCoin::heads();
+
+        let tails = coin.rotate(1);
+        assert!(tails.is_tails());
+
+        let tails = coin.rotate(-1);
+        assert!(tails.is_tails());
+
+        let tails = coin.rotate(-5);
+        assert!(tails.is_tails());
+    }
+
+    #[test]
+    fn simple_coin_set() {
+        let mut coin = SimpleCoin::heads();
+        coin.set(CoinFacing::Tails);
+        assert!(coin.is_tails());
+    }
+
+    #[test]
+    fn simple_coin_swap_mut() {
+        let mut coin = SimpleCoin::heads();
+        coin.swap_mut();
+        assert!(coin.is_tails());
+    }
+
+    #[test]
+    fn simple_coin_rotate_mut() {
+        let mut coin = SimpleCoin::heads();
+        coin.rotate_mut(3);
+        assert!(coin.is_tails());
+    }
+
+    #[test]
+    fn simple_coin_next_mut() {
+        let mut coin = SimpleCoin::heads();
+        coin.next_mut();
+        assert!(coin.is_tails());
+    }
+}

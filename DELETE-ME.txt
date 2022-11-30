@@ -499,3 +499,5 @@ impl Polyhedral<u8, 6> for SimpleD6 {
         RANGE.contains(value)
     }
 }
+
+- https://docs.rs/dice/0.1.0/dice/struct.Distribution.html

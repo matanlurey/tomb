@@ -1,0 +1,28 @@
+https://docs.rs/caith/4.2.3/caith/struct.DiceResult.html
+Side of the dice that was rolled, and critic/remarks (normal, min, max)
+
+https://docs.rs/caith/4.2.3/caith/struct.Dices.html
+Lazily returns each dice of the expression
+
+https://docs.rs/caith/4.2.3/caith/struct.RepeatedRollResult.html
+Repeated roll?
+
+https://docs.rs/caith/4.2.3/caith/struct.RollResult.html
+Single roll?
+
+https://docs.rs/caith/4.2.3/caith/struct.Roller.html
+Weird Roller
+
+https://docs.rs/lib_dice/0.1.0/lib_dice/fn.roll.html
+Simple
+
+https://docs.rs/diceroll/0.1.0/diceroll/struct.DiceRoll.html
+Complicated
+
+https://docs.rs/one-d-six/0.5.0/one_d_six/struct.Dice.html
+https://docs.rs/one-d-six/0.5.0/one_d_six/struct.Die.html
+https://docs.rs/one-d-six/0.5.0/one_d_six/trait.DiceTotal.html
+Neat use of add and sum
+
+https://docs.rs/one-d-six/0.5.0/one_d_six/trait.Rollable.html
+Ooh I like this for enums...
