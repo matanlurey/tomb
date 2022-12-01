@@ -283,7 +283,7 @@ where
 
 impl<T, const MAXIMUM: usize> RotateMut for NumericDie<T, MAXIMUM>
 where
-    T: Numeric + Add<Output = T> + Sub<Output = T>,
+    T: Numeric + Debug + Add<Output = T> + Sub<Output = T>,
 {
     fn rotate_mut(&mut self, amount: i8) {
         if amount == 0 {

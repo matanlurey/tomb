@@ -10,7 +10,7 @@ pub trait Roll {
 
 pub trait RollMut {
     /// Rotates an entity randomly, mutating the entity, where random is defined elsewhere.
-    fn roll_mut<T>(&self, rotate: T)
+    fn roll_mut<T>(&self, rotate: &mut T)
     where
         T: RotateMut + Polyhedral;
 }

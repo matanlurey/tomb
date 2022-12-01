@@ -32,14 +32,27 @@ mod tests {
     use fastrand::Rng;
 
     use crate::items::{RngRoller, D6};
-    use crate::traits::Roll;
+    use crate::traits::{Roll, RollMut};
 
     #[test]
     fn roll() {
         let roller = RngRoller::from(Rng::with_seed(7194422452970863838));
 
         let d6 = D6::new();
+        assert_eq!(d6.value(), 1);
+
         let rd = roller.roll(d6);
         assert_eq!(rd.value(), 3);
+    }
+
+    #[test]
+    fn roll_mut() {
+        let roller = RngRoller::from(Rng::with_seed(7194422452970863838));
+
+        let mut d6 = D6::new();
+        assert_eq!(d6.value(), 1);
+
+        roller.roll_mut(&mut d6);
+        assert_eq!(d6.value(), 3);
     }
 }

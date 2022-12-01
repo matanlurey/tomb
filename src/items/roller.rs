@@ -23,7 +23,7 @@ impl Roll for NopRoller {
 }
 
 impl RollMut for NopRoller {
-    fn roll_mut<T>(&self, mut _rotate: T)
+    fn roll_mut<T>(&self, _rotate: &mut T)
     where
         T: RotateMut,
     {
@@ -58,19 +58,19 @@ impl Roll for RngRoller {
         let sides = T::sides();
         let range = 0..sides;
         let amount = self.0.usize(range);
-        dbg!(amount);
         rotate.rotate(amount as i8)
     }
 }
 
 impl RollMut for RngRoller {
-    fn roll_mut<T>(&self, mut rotate: T)
+    fn roll_mut<T>(&self, rotate: &mut T)
     where
         T: Polyhedral + RotateMut,
     {
         let sides = T::sides();
         let range = 0..sides;
         let amount = self.0.usize(range);
+
         rotate.rotate_mut(amount as i8);
     }
 }
