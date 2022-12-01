@@ -2,6 +2,15 @@
 name = "tomb"
 version = "0.1.0"
 edition = "2021"
+authors = ["Matan Lurey <matan@lurey.org>"]
+description = "A minimal crate that provides dice rolling mechanisms for games"
+repository = "https://github.com/matanlurey/grud"
+license = "MIT"
+keywords = ["dice", "roller", "tabletop", "games", "gamdev"]
+categories = [
+  "game-development",
+  "simulation",
+]
 
 [dependencies]
 fastrand = {version = "1.8.0", optional = true}

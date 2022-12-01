@@ -33,3 +33,8 @@ pub mod traits;
 
 pub use items::{NumericDie, RngRoller, D20, D6};
 pub use traits::{Roll, RollMut};
+
+#[doc = include_str!("../README.md")]
+#[cfg(test)]
+#[allow(dead_code)]
+struct ReadmeDoctests;
