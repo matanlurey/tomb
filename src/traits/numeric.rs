@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub};
 
-/// Describes a value that _behaves_ like a number.
+/// A trait that describes a value that _behaves_ like a number.
 ///
 /// _Numeric_ indicates, that:
 ///

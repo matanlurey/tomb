@@ -19,6 +19,11 @@
 //! let d6 = D6::new();
 //! let rd = roller.roll(d6);
 //! assert_eq!(rd.value(), 3);
+//!
+//! // Mutable objects.
+//! let mut d6 = D6::new();
+//! roller.roll_mut(&mut d6);
+//! assert_eq!(rd.value(), 3);
 //! ```
 
 mod dice;

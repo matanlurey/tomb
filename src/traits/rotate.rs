@@ -1,4 +1,4 @@
-/// Rotates by use of _step_ functions, i.e. seeking forward or backward one step at a time.
+/// A trait that creates elements by use of _step_ functions, i.e. seeking forward or backward.
 pub trait Step {
     /// Steps _forward_ logically, for whatever that means, returning rotated by 1.
     #[must_use]
@@ -9,7 +9,7 @@ pub trait Step {
     fn back(&self) -> Self;
 }
 
-/// Mutates by stepping the position, i.e. seeking forwad or backward one step at a time.
+/// A trait that mutates state by use of _step_ functions, i.e. seeking forward or backward.
 pub trait StepMut {
     /// Steps _forward_ logically, for whatever that means, rotating by 1.
     fn next_mut(&mut self);
@@ -18,6 +18,7 @@ pub trait StepMut {
     fn back_mut(&mut self);
 }
 
+/// A trait that can create rotated (forwards or backwards) elements given a number.
 pub trait Rotate
 where
     Self: Clone + Step,
@@ -46,6 +47,7 @@ where
     }
 }
 
+/// A trait that can rotate (mutating; forwards or backwards) elements given a number.
 pub trait RotateMut
 where
     Self: StepMut,

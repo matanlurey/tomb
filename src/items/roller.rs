@@ -3,6 +3,23 @@ use fastrand::Rng;
 use crate::traits::{Polyhedral, Roll, RollMut, Rotate, RotateMut};
 
 /// Declares that it rolls entities, but does nothing.
+///
+/// # Examples
+///
+/// ```
+/// use tomb::items::{D6, NopRoller};
+/// use tomb::traits::RollMut;
+///
+/// let roller = NopRoller;
+/// let mut d6 = D6::new();
+/// assert_eq!(d6.value(), 1);
+///
+/// // An arbitrary number of times, just to show it never changes the die.
+/// for _ in 0..10 {
+///     roller.roll_mut(&mut d6);
+///     assert_eq!(d6.value(), 1);
+/// }
+/// ```
 #[derive(Clone, Copy, Default)]
 pub struct NopRoller;
 
@@ -32,6 +49,22 @@ impl RollMut for NopRoller {
 }
 
 /// Rolls entities using the `fastrand` crate.
+///
+/// # Examples
+///
+/// ```
+/// use fastrand::Rng;
+/// use tomb::items::{D6, RngRoller};
+/// use tomb::traits::RollMut;
+///
+/// // Arbirtary number to make the example result predictable.
+/// let rng = Rng::with_seed(7194422452970863838);
+/// let roller = RngRoller::from(rng);
+/// let mut d6 = D6::new();
+/// assert_eq!(d6.value(), 1);
+///
+/// roller.roll_mut(&mut d6);
+/// assert_eq!(d6.value(), 3);
 #[cfg(feature = "fastrand")]
 #[derive(Clone, Default)]
 pub struct RngRoller(Rng);
