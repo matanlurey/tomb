@@ -16,7 +16,7 @@ use crate::traits::{Polyhedral, Rotate, RotateMut, Step, StepMut};
 ///
 /// SliceDie::from(&GRADES);
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SliceDie<'a, T, const LENGTH: usize> {
     position: usize,
     elements: &'a [T; LENGTH],
@@ -52,7 +52,7 @@ impl<'a, T, const LENGTH: usize> SliceDie<'a, T, LENGTH> {
     /// # Panics
     ///
     /// If the value is out of bounds.
-    pub fn with_position(position: usize, elements: &'a [T; LENGTH]) -> Self {
+    pub fn with_position(elements: &'a [T; LENGTH], position: usize) -> Self {
         assert!(position < LENGTH);
         Self { elements, position }
     }
@@ -153,7 +153,7 @@ fn rotate_forward_usize<const MAXIMUM: usize>(position: usize, amount: usize) ->
 
 fn rotate_backward_usize<const MAXIMUM: usize>(position: usize, amount: i8) -> usize {
     let current = position as i8;
-    let rotated = current - amount;
+    let rotated = current + amount;
     if rotated >= 0 {
         return rotated.unsigned_abs() as usize;
     }
@@ -198,6 +198,7 @@ impl<'a, T, const MAXIMUM: usize> RotateMut for SliceDie<'a, T, MAXIMUM> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::Polyhedral;
 
     type GradeDie<'a> = SliceDie<'a, char, 5>;
     const GRADES: [char; 5] = ['A', 'B', 'C', 'D', 'F'];
@@ -220,10 +221,16 @@ mod tests {
 
     #[test]
     fn slice_from() {
-        let a = GradeDie::new(&GRADES);
-        let b = GradeDie::new(&GRADES);
+        let a = GradeDie::from(&GRADES);
+        let b = GradeDie::from(&GRADES);
 
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn slice_sides() {
+        let a = GradeDie::from(&GRADES);
+        assert_eq!(a.sides(), &GRADES);
     }
 
     #[test]
@@ -236,7 +243,7 @@ mod tests {
 
     #[test]
     fn slice_next_wrap() {
-        let d = GradeDie::with_position(4, &GRADES).next();
+        let d = GradeDie::with_position(&GRADES, 4).next();
 
         assert_eq!(d.position(), 0);
         assert_eq!(d.value(), &'A');
@@ -253,7 +260,7 @@ mod tests {
 
     #[test]
     fn slice_next_mut_wrap() {
-        let mut d = GradeDie::with_position(4, &GRADES);
+        let mut d = GradeDie::with_position(&GRADES, 4);
         d.next_mut();
 
         assert_eq!(d.position(), 0);
@@ -262,7 +269,7 @@ mod tests {
 
     #[test]
     fn slice_back() {
-        let d = GradeDie::with_position(4, &GRADES).back();
+        let d = GradeDie::with_position(&GRADES, 4).back();
 
         assert_eq!(d.position(), 3);
         assert_eq!(d.value(), &'D');
@@ -278,7 +285,7 @@ mod tests {
 
     #[test]
     fn slice_back_mut() {
-        let mut d = GradeDie::with_position(4, &GRADES);
+        let mut d = GradeDie::with_position(&GRADES, 4);
         d.back_mut();
 
         assert_eq!(d.position(), 3);
@@ -291,6 +298,97 @@ mod tests {
         d.back_mut();
 
         assert_eq!(d.position(), 4);
+        assert_eq!(d.value(), &'F');
+    }
+
+    #[test]
+    fn slice_polyhedral_sides() {
+        let d = GradeDie::new(&GRADES);
+
+        fn get_sides<P: Polyhedral>(_: P) -> usize {
+            P::sides()
+        }
+
+        assert_eq!(get_sides(d), GRADES.len());
+    }
+
+    #[test]
+    fn slice_rotate_none() {
+        let d = GradeDie::new(&GRADES);
+        let r = d.rotate(0);
+
+        assert_eq!(r.value(), &'A');
+    }
+
+    #[test]
+    fn slice_rotate_mut_none() {
+        let mut d = GradeDie::new(&GRADES);
+        d.rotate_mut(0);
+
+        assert_eq!(d.value(), &'A');
+    }
+
+    #[test]
+    fn slice_rotate_next() {
+        let d = GradeDie::new(&GRADES);
+        let r = d.rotate(1);
+
+        assert_eq!(r.value(), &'B');
+    }
+
+    #[test]
+    fn numeric_die_rotate_next_wrap() {
+        let d = GradeDie::with_position(&GRADES, 4);
+        let r = d.rotate(1);
+
+        assert_eq!(r.value(), &'A');
+    }
+
+    #[test]
+    fn numeric_die_rotate_back() {
+        let d = GradeDie::with_position(&GRADES, 1);
+        let r = d.rotate(-1);
+
+        assert_eq!(r.value(), &'A');
+    }
+
+    #[test]
+    fn numeric_die_rotate_back_wrap() {
+        let d = GradeDie::new(&GRADES);
+        let r = d.rotate(-1);
+
+        assert_eq!(r.value(), &'F');
+    }
+
+    #[test]
+    fn numeric_die_rotate_next_mut() {
+        let mut d = GradeDie::new(&GRADES);
+        d.rotate_mut(1);
+
+        assert_eq!(d.value(), &'B');
+    }
+
+    #[test]
+    fn numeric_die_rotate_next_mut_wrap() {
+        let mut d = GradeDie::with_position(&GRADES, 4);
+        d.rotate_mut(1);
+
+        assert_eq!(d.value(), &'A');
+    }
+
+    #[test]
+    fn numeric_die_rotate_back_mut() {
+        let mut d = GradeDie::with_position(&GRADES, 1);
+        d.rotate_mut(-1);
+
+        assert_eq!(d.value(), &'A');
+    }
+
+    #[test]
+    fn numeric_die_rotate_back_mut_wrap() {
+        let mut d = GradeDie::new(&GRADES);
+        d.rotate_mut(-1);
+
         assert_eq!(d.value(), &'F');
     }
 }

@@ -76,3 +76,82 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone)]
+    struct FakeDie(i8);
+
+    impl Step for FakeDie {
+        fn next(&self) -> Self {
+            FakeDie(self.0 + 1)
+        }
+
+        fn back(&self) -> Self {
+            FakeDie(self.0 - 1)
+        }
+    }
+
+    impl StepMut for FakeDie {
+        fn next_mut(&mut self) {
+            self.0 += 1
+        }
+
+        fn back_mut(&mut self) {
+            self.0 -= 1
+        }
+    }
+
+    impl Rotate for FakeDie {}
+    impl RotateMut for FakeDie {}
+
+    #[test]
+    fn rotate_impl_none() {
+        let d = FakeDie(0);
+        let r = d.rotate(0);
+
+        assert_eq!(r.0, 0);
+    }
+
+    #[test]
+    fn rotate_impl_forwards() {
+        let d = FakeDie(0);
+        let r = d.rotate(2);
+
+        assert_eq!(r.0, 2);
+    }
+
+    #[test]
+    fn rotate_impl_backwards() {
+        let d = FakeDie(0);
+        let r = d.rotate(-2);
+
+        assert_eq!(r.0, -2);
+    }
+
+    #[test]
+    fn rotate_mut_impl_none() {
+        let mut d = FakeDie(0);
+        d.rotate_mut(0);
+
+        assert_eq!(d.0, 0);
+    }
+
+    #[test]
+    fn rotate_mut_impl_forwards() {
+        let mut d = FakeDie(0);
+        d.rotate_mut(2);
+
+        assert_eq!(d.0, 2);
+    }
+
+    #[test]
+    fn rotate_mut_impl_backwards() {
+        let mut d = FakeDie(0);
+        d.rotate_mut(-2);
+
+        assert_eq!(d.0, -2);
+    }
+}

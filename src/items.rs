@@ -17,7 +17,7 @@
 //!
 //! // Immutable objects.
 //! let d6 = D6::new();
-//! let rd = roller.roll(d6);
+//! let rd = roller.roll(&d6);
 //! assert_eq!(rd.value(), 3);
 //!
 //! // Mutable objects.
@@ -46,7 +46,7 @@ mod tests {
         let d6 = D6::new();
         assert_eq!(d6.value(), 1);
 
-        let rd = roller.roll(d6);
+        let rd = roller.roll(&d6);
         assert_eq!(rd.value(), 3);
     }
 
