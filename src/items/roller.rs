@@ -119,39 +119,31 @@ mod tests {
 
     impl Step for PanicDie {
         fn next(&self) -> Self {
-            panic!("Should not invoke");
+            unreachable!()
         }
 
         fn back(&self) -> Self {
-            panic!("Should not invoke");
+            unreachable!()
         }
     }
 
     impl StepMut for PanicDie {
         fn next_mut(&mut self) {
-            panic!("Should not invoke");
+            unreachable!()
         }
 
         fn back_mut(&mut self) {
-            panic!("Should not invoke");
+            unreachable!()
         }
     }
 
-    impl Rotate for PanicDie {
-        fn rotate(&self, _: i8) -> Self {
-            panic!("Should not invoke");
-        }
-    }
+    impl Rotate for PanicDie {}
 
-    impl RotateMut for PanicDie {
-        fn rotate_mut(&mut self, _: i8) {
-            panic!("Should not invoke");
-        }
-    }
+    impl RotateMut for PanicDie {}
 
     impl Polyhedral for PanicDie {
         fn sides() -> usize {
-            panic!("Should not invoke");
+            unreachable!()
         }
     }
 
