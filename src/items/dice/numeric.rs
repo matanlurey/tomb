@@ -30,7 +30,7 @@ use crate::traits::{Numeric, Polyhedral, Rotate, RotateMut, Step, StepMut};
 /// 1. Implement the [`Numeric`] trait.
 /// 2. The _default_ value should be `1` or `1`-like.
 /// 3. Solemnly swear to behave like numbers so that future traits can utilize them like one.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct NumericDie<T, const MAXIMUM: usize>(T)
 where
     T: Numeric;
@@ -176,7 +176,7 @@ where
     T: Numeric,
 {
     fn sides() -> usize {
-        MAXIMUM
+        Self::sides()
     }
 }
 
@@ -270,7 +270,7 @@ where
     #[must_use]
     fn rotate(&self, amount: i8) -> Self {
         if amount == 0 {
-            return *self;
+            return self.clone();
         }
         let result = if amount > 0 {
             rotate_forward_usize::<T, MAXIMUM>(amount.unsigned_abs() as usize, self.0.as_usize())
@@ -317,22 +317,15 @@ mod tests {
     }
 
     #[test]
-    fn numeric_die_is_copy() {
-        fn copy<T>(die: T) -> T
-        where
-            T: Copy,
-        {
-            die
-        }
-
-        let d4_2 = copy(D4::from(2));
-        assert_eq!(d4_2.value(), 2);
-    }
-
-    #[test]
     fn numeric_die_is_debug() {
         let d4_2 = D4::from(2);
         assert_eq!(format!("{:?}", d4_2), "D4:2");
+    }
+
+    #[test]
+    fn numeric_die_is_default() {
+        let d4_1: D4 = Default::default();
+        assert_eq!(d4_1.value(), 1);
     }
 
     #[test]
@@ -418,6 +411,22 @@ mod tests {
         d4.back_mut();
 
         assert_eq!(d4.value(), 4);
+    }
+
+    #[test]
+    fn numeric_die_rotate_none() {
+        let d4_2 = D4::from(2);
+        let d4_2 = d4_2.rotate(0);
+
+        assert_eq!(d4_2.value(), 2);
+    }
+
+    #[test]
+    fn numeric_die_rotate_mut_none() {
+        let mut d4_2 = D4::from(2);
+        d4_2.rotate_mut(0);
+
+        assert_eq!(d4_2.value(), 2);
     }
 
     #[test]

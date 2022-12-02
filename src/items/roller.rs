@@ -20,7 +20,7 @@ use crate::traits::{Polyhedral, Roll, RollMut, Rotate, RotateMut};
 ///     assert_eq!(d6.value(), 1);
 /// }
 /// ```
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub struct NopRoller;
 
 impl NopRoller {
@@ -31,11 +31,11 @@ impl NopRoller {
 }
 
 impl Roll for NopRoller {
-    fn roll<T>(&self, rotate: T) -> T
+    fn roll<T>(&self, rotate: &T) -> T
     where
         T: Rotate,
     {
-        rotate
+        rotate.to_owned()
     }
 }
 
@@ -84,7 +84,7 @@ impl From<Rng> for RngRoller {
 }
 
 impl Roll for RngRoller {
-    fn roll<T>(&self, rotate: T) -> T
+    fn roll<T>(&self, rotate: &T) -> T
     where
         T: Polyhedral + Rotate,
     {
@@ -105,5 +105,93 @@ impl RollMut for RngRoller {
         let amount = self.0.usize(range);
 
         rotate.rotate_mut(amount as i8);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::traits::{Step, StepMut};
+
+    use super::*;
+
+    #[derive(Clone)]
+    struct PanicDie;
+
+    impl Step for PanicDie {
+        fn next(&self) -> Self {
+            panic!("Should not invoke");
+        }
+
+        fn back(&self) -> Self {
+            panic!("Should not invoke");
+        }
+    }
+
+    impl StepMut for PanicDie {
+        fn next_mut(&mut self) {
+            panic!("Should not invoke");
+        }
+
+        fn back_mut(&mut self) {
+            panic!("Should not invoke");
+        }
+    }
+
+    impl Rotate for PanicDie {
+        fn rotate(&self, _: i8) -> Self {
+            panic!("Should not invoke");
+        }
+    }
+
+    impl RotateMut for PanicDie {
+        fn rotate_mut(&mut self, _: i8) {
+            panic!("Should not invoke");
+        }
+    }
+
+    impl Polyhedral for PanicDie {
+        fn sides() -> usize {
+            panic!("Should not invoke");
+        }
+    }
+
+    #[test]
+    #[allow(clippy::redundant_clone)]
+    fn nop_roller_new_and_clone() {
+        let _ = NopRoller::new().clone();
+    }
+
+    #[test]
+    fn nop_roller_default() {
+        let _: NopRoller = Default::default();
+    }
+
+    #[test]
+    fn nop_roller_no_changes() {
+        let panic = PanicDie {};
+        let roller = NopRoller::new();
+        for _ in 0..10 {
+            let _ = roller.roll(&panic);
+        }
+    }
+
+    #[test]
+    fn nop_roller_mut_no_changes() {
+        let mut panic = PanicDie {};
+        let roller = NopRoller::new();
+        for _ in 0..10 {
+            roller.roll_mut(&mut panic);
+        }
+    }
+
+    #[test]
+    #[allow(clippy::redundant_clone)]
+    fn rng_roller_new_and_clone() {
+        let _ = RngRoller::new().clone();
+    }
+
+    #[test]
+    fn rng_roller_default() {
+        let _: RngRoller = Default::default();
     }
 }
