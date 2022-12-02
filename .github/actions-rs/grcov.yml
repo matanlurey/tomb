@@ -1,3 +1,3 @@
 output-type: lcov
 excl-start:
-  - "mod tests \{"
+  - "mod tests \\{"
